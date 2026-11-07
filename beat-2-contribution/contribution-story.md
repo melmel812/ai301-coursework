@@ -1,4 +1,4 @@
-# Contribution: [Issue Title]
+# Contribution: The console's new-item Description box sits one column off
 
 Path: `beat-2-contribution/contribution-story.md`
 
@@ -7,11 +7,10 @@ the repository is not read. **Keep every section header below under its exact na
 format criteria grade exactly that. Your course repo link is the whole submission: no tool
 files and no evidence uploads are part of Assignment 5.
 
-**Contribution Number:** [1]
-**Student:** [Student name]
-**GitHub Username:** [your GitHub username, exactly as it appears on your profile - no @, no
-profile URL. Your comments upstream are identified by this name.]
-**Issue:** [GitHub issue link]
+**Contribution Number:** 1
+**Student:** Melody Wong
+**GitHub Username:** melmel812
+**Issue:** https://github.com/itsOmidKarami/kraft/issues/1309
 **Pull Request:** [GitHub PR link, once opened]
 
 One repository, built across units 5 to 8, telling the whole story of your real
@@ -55,16 +54,13 @@ happened; these entries are the toolkit's own timeline.
 All four entries are graded. Keep every heading below, and fill each
 one in the week it belongs to.
 
-**Unit 5: [one line on the tool work]**
+**Unit 5: Built the issue-scout with a Python bug-fix search strategy and ran a live scan**
 
-[2-4 sentences: what you built (the scout, your strategy), what broke
-or fell short, what changed because of it.]
+Installed the issue-scout skill over the unit-1 sandbox, wrote a fit profile targeting Python bug fixes, and authored two `gh search issues` queries with ranking filters (drop assignees, drop stale, fewest comments first). The scan surfaced 198 candidates, ranked them to 5, and graded all 5 against the rubric; one was rejected for having a bot-generated placeholder body with no defined scope, which the bounded-scope check caught. The rubric held up on all five without needing a patch, so no changes were made to rubric.md; the auto-generated issue was a clear failure signal, not a gray area.
 
-**Unit 6: [one line on the tool work]**
+**Unit 6: Installed the voice guard, patched the rubric scope check, re-graded picks, and wrote a repo memory file for kraft**
 
-[2-4 sentences: the voice-guard, the repo-memory file. What broke or
-fell short, and what changed because of it. "Nothing broke" counts when
-it is true - say how you know.]
+The voice guard (`check_voice.py` as a PreToolUse hook) now intercepts every `gh issue comment` / `gh pr create` call before it posts. The rubric patch replaced the strict "Bounded scope" check with the more permissive "scope-feasible" row — the old check rejected most real-world issues with any open edge; the new one only rejects issues with no single identifiable piece of work. Re-grading with the patched rubric revealed that two of my three previous accepts (mcp-memory-service #1893 and discord-youtube-tracker #4) had open PRs fixing them since last week's scan; only kraft #1309 remained. The repo memory file (CLAUDE.local.md) distills the CONTRIBUTING.md rules, the subsystem my issue touches, and the exact test command into the clone root so Claude doesn't re-orient each session.
 
 **Unit 7: [one line on the tool work]**
 
@@ -80,24 +76,16 @@ drafted, what you did with the draft.]
 
 ## Why I Chose This Issue
 
-[1-2 paragraphs in your own words: how you searched, what your scan
-surfaced, what your scout's verdict said, why this issue fits your
-profile, and what you hope to learn. If your scout's verdict on it
-was reject and you chose it anyway, say so here and say why; choosing
-against your own tool silently is what loses points. Close with an
-honest read of the tool itself: where the scout fell short on a real
-wild search and what you changed or would change, or what convinced
-you it held up. **Record the link to your claim comment in this section too.**
-Not claimed yet? Write `claim pending` and today's date where the link goes,
-and add the link the moment your claim lands.]
+I built an issue-scout with two `gh search issues` queries targeting Python bug fixes labeled "good first issue." The scout searched broadly (100 results per query), dropped any issue with an assignee or stale activity, and sorted survivors by fewest comments. From 198 unique results it graded the top 5 against my rubric; four accepted, one rejected for having a bot-generated placeholder body with no defined scope.
+
+This issue ranked first among the accepted candidates. The fix is a single CSS padding rule for one widget in one screen — the scope couldn't be tighter. The issue body names the exact file, line range, fix, and test command, so there's no design decision left for me to make. Kraft released v2.5.0 five days before the scan and had commits the same day, so the repo is clearly active. My scout accepted it on all four required checks, and the newcomer signal (preferred) check passed too. I expect to learn how Textual's widget styling and headless pilot testing work. My claim comment: https://github.com/itsOmidKarami/kraft/issues/1309#issuecomment-6704022809
 
 **Toolkit**
 
-- Tool: issue-scout (your scout: your search strategy, your rubric),
-  and how you used it
-- What it produced: [the scan and its verdict on this issue, described]
-- Difficulties: [where it fell short, or "none met" if none did]
-- What changed: [what you patched or would update, or "nothing"]
+- Tool: issue-scout (two gh search queries: good-first-issue + bug + python; bug + python), ranked by fewest comments after dropping assignees and stale results; re-graded in unit 6 with the scope-feasible rubric patch
+- What it produced: 4 accepted candidates out of 5 graded in unit 5; re-grade in unit 6 showed only kraft #1309 still accepts — mcp-memory-service #1893 and discord-youtube-tracker #4 both had open PRs fixing them (not-claimed fail); difficulty note for #1309: straightforward
+- Difficulties: the strict "Bounded scope" check was replaced with "scope-feasible" in unit 6 because it rejected most real issues with any open edge; the re-grade also caught that two previously accepted issues had been claimed by open PRs since the first scan
+- What changed: rubric.md scope check replaced with scope-feasible row; difficulty note section added; scan-notes.md updated with the patch rationale
 
 ---
 
@@ -132,31 +120,63 @@ and add the link the moment your claim lands.]
 
 **Environment Setup**
 
-[What a stranger would need to stand this up: your operating system,
-the relevant versions (language, runtime, package manager, the project
-itself), and how you set the project up. Then the challenges you faced
-and how you solved them, or that none came up.]
+macOS 15.5 (arm64, Apple M-series). Forked itsOmidKarami/kraft to melmel812/kraft and cloned locally. Installed `just` via Homebrew and `uv` via pip, then ran `just setup` (uv sync + npm ci). No challenges: setup completed cleanly on first run.
+
+- kraft v2.5.0 (commit 2026-11-06, main branch)
+- Python 3.15.3 (via uv, kraft's `.venv`)
+- Textual 2.5.6 (pinned in kraft's `uv.lock`)
 
 **Steps to Reproduce**
 
-1. [Step 1]
-2. [Step 2]
-3. [Observed result]
+1. Clone the fork and run `just setup`.
+2. Run the headless pilot script below (no interactive terminal needed):
+
+```python
+import asyncio
+from textual.app import App, ComposeResult
+from textual.containers import Horizontal
+from textual.widgets import Input, TextArea
+
+class Demo(App):
+    CSS = """
+    .row { height: 1; }
+    .row > Input, .row > TextArea { width: 1fr; }
+    """
+    def compose(self) -> ComposeResult:
+        with Horizontal(classes='row'):
+            yield Input(compact=True, id='inp')
+        with Horizontal(classes='row'):
+            yield TextArea(compact=True, id='ta')
+
+async def main():
+    app = Demo()
+    async with app.run_test(size=(80, 10)) as pilot:
+        inp = app.query_one('#inp', Input)
+        ta = app.query_one('#ta', TextArea)
+        print(f'Input  offset.x={inp.content_offset.x}  padding={inp.styles.padding}')
+        print(f'TextArea offset.x={ta.content_offset.x}  padding={ta.styles.padding}')
+
+asyncio.run(main())
+```
+
+3. Observed: `TextArea offset.x=1` vs `Input offset.x=0` — the TextArea content starts one column to the right.
 
 **Reproduction Evidence**
 
-- **Commit showing reproduction:** [link to commit in your fork]
-- **Screenshots/logs:** [if applicable]
-- **My findings:** [what you discovered during reproduction; an
-  honest, evidenced cannot-reproduce that led you to re-pick or ask
-  the maintainer belongs here and costs you nothing]
+- **Commit showing reproduction:** none — repro is a standalone script run against unmodified main branch
+- **Output:**
+  ```
+  Input  offset.x=0  padding=Spacing(top=0, right=0, bottom=0, left=0)
+  TextArea offset.x=1  padding=Spacing(top=0, right=1, bottom=0, left=1)
+  ```
+- **My findings:** Textual's `Input` DEFAULT_CSS sets `padding: 0` inside its `&.-textual-compact` block; `TextArea`'s compact variant only removes the border — `padding: 0 1` is never cleared. The kraft CSS rule at `kraft.tcss:508` sets `width: 1fr` for both widgets but adds no padding override for TextArea. This matches the issue's diagnosis exactly. 22 existing tests in `tests/console/test_new_item.py` pass on main; none assert the Description widget's left-edge alignment.
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: repro-check (live mode, full package grade against kraft/issues/1309)
+- What it produced: verdict accept on all 7 required checks; headless Textual pilot output showing `TextArea offset.x=1` vs `Input offset.x=0` as the concrete artifact
+- Difficulties: `just` and `uv` were not on PATH initially; installed both before setup could run
+- What changed: nothing in the rubric or repro process; the pilot script approach worked on first attempt
 
 ---
 
