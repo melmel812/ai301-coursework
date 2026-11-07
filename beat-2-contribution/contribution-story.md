@@ -11,7 +11,7 @@ files and no evidence uploads are part of Assignment 5.
 **Student:** Melody Wong
 **GitHub Username:** melmel812
 **Issue:** https://github.com/itsOmidKarami/kraft/issues/1309
-**Pull Request:** [GitHub PR link, once opened]
+**Pull Request:** https://github.com/itsOmidKarami/kraft/pull/1315
 
 One repository, built across units 5 to 8, telling the whole story of your real
 contribution. Fill it as you work, not at the end — the sections below ask for evidence that
@@ -66,10 +66,9 @@ The voice guard (`check_voice.py` as a PreToolUse hook) now intercepts every `gh
 
 The ship-gate runs before `gh pr create`, executes the manifest's checks (targeted tests + lint), and then runs pr-precheck on the branch, plan, evidence, and PR description. The manifest took one pass to write correctly — `just test tests/console/test_new_item.py -n auto` and `just lint` are the two checks CONTRIBUTING.md names for this issue's scope. The gate ran on `fix/1309-textarea-padding` and passed all four pr-precheck dimensions (plan-fidelity, test-evidence, diff-quality, standards-comms) on the first attempt; no rubric fixes were needed. The only friction was that the voice guard runs claude internally, so the final `gh pr create` has to go through a new Claude Code session rather than from within an existing one.
 
-**Unit 8: [one line on the tool work]**
+**Unit 8: Installed the PR monitor, wrote a playbook, ran a full monitor pass on kraft PR #1315**
 
-[2-4 sentences: the PR-monitor and your playbook. What it read, what it
-drafted, what you did with the draft.]
+The PR monitor read PR #1315 (kraft, Description box alignment fix): opened 2026-11-07, CI checks pending on a fresh PR, no reviews or comments yet. It drafted a "wait — nudge threshold not yet met" note, correctly applying the 30-day staleness rule I wrote in the playbook. I kept the draft — nothing to send — because the PR was just opened and no threshold has been crossed. The main difficulty in writing the playbook was that kraft has very low external contributor PR volume, so I had to infer the staleness threshold from the repo's overall merge cadence and the maintainer's activity pattern rather than measuring a sample of contributor wait times directly.
 
 ---
 
@@ -77,7 +76,7 @@ drafted, what you did with the draft.]
 
 I built an issue-scout with two `gh search issues` queries targeting Python bug fixes labeled "good first issue." The scout searched broadly (100 results per query), dropped any issue with an assignee or stale activity, and sorted survivors by fewest comments. From 198 unique results it graded the top 5 against my rubric; four accepted, one rejected for having a bot-generated placeholder body with no defined scope.
 
-This issue ranked first among the accepted candidates. The fix is a single CSS padding rule for one widget in one screen — the scope couldn't be tighter. The issue body names the exact file, line range, fix, and test command, so there's no design decision left for me to make. Kraft released v2.5.0 five days before the scan and had commits the same day, so the repo is clearly active. My scout accepted it on all four required checks, and the newcomer signal (preferred) check passed too. I expect to learn how Textual's widget styling and headless pilot testing work. My claim comment: https://github.com/itsOmidKarami/kraft/issues/1309#issuecomment-6704022809
+This issue ranked first among the accepted candidates. The fix is a single CSS padding rule for one widget in one screen — the scope couldn't be tighter. The issue body names the exact file, line range, fix, and test command, so there's no design decision left for me to make. Kraft released v2.5.0 five days before the scan and had commits the same day, so the repo is clearly active. My scout accepted it on all four required checks, and the newcomer signal (preferred) check passed too. I learned how Textual's widget styling and headless pilot testing work. My claim comment: https://github.com/itsOmidKarami/kraft/issues/1309#issuecomment-6704022809
 
 **Toolkit**
 
@@ -114,7 +113,7 @@ The bug has two involved files and a one-sided cause:
 - Tool: Claude Code — read `new_item.py`, `kraft.tcss`, and the Textual widget source; cross-referenced against the repro pilot output from repro-check
 - What it produced: confirmed the one-file fix location (`kraft.tcss` line 508) and ruled out any change needed in `new_item.py`; the repro pilot's `offset.x` values were the decisive artifact
 - Difficulties: none — the issue body named the exact file and rule; reading the code confirmed it
-- What changed: nothing in the rubric or repro process; the pilot approach produced the needed artifact on first run
+- What changed: nothing — the analysis required no iteration; the pilot output mapped directly to the two files and ruled out any change to the Python code
 
 ---
 
@@ -199,14 +198,14 @@ Explicitly not changing: `new_item.py` (widget instantiation is correct), any ot
 1. `src/kraft/console/kraft.tcss` — after the existing `.new-field > Input, .new-field > TextArea { width: 1fr; }` block at line 508, add `.new-field > TextArea { padding: 0; }` to override the default padding for the Description widget.
 2. `tests/console/test_new_item.py` — add an assertion to the existing `test_the_form_fits_80x24` test that `form.query_one(TextArea).content_offset.x == 0`, confirming the Description left edge aligns with the other fields (the test already queries the form with a headless pilot and checks layout properties).
 
-[Record deviations here as they happen: what changed mid-build and why. A recorded deviation is honest work; silent drift is not.]
+One deviation: the test return line had to be refactored to extract `ta = form.query_one(TextArea)` before the return to satisfy ruff's 100-character limit. The fix location (kraft.tcss line 508), the fix itself (`padding: 0`), and the test location (`test_the_form_fits_80x24`) matched the plan exactly.
 
 **Toolkit**
 
 - Tool: Claude Code — read `kraft.tcss` and `test_new_item.py` to scope the change; cross-referenced with the issue body's named fix and the CLAUDE.local.md repo memory file
 - What it produced: a two-step implementation plan (one-line stylesheet addition + one assertion in an existing test) with zero scope creep
 - Difficulties: none — the issue body identified the fix precisely; the plan simply commits to that path and pins the test location
-- What changed: nothing yet; this section will be updated as build deviations occur
+- What changed: test return line refactored to extract `ta = form.query_one(TextArea)` before the return statement to satisfy ruff's 100-character limit; fix itself and all plan locations matched exactly
 
 ---
 
@@ -246,7 +245,7 @@ Created branch `fix/1309-textarea-padding` from main. Added `.new-field > TextAr
 
 ## Pull Request
 
-**PR Link:** [to be added once opened]
+**PR Link:** https://github.com/itsOmidKarami/kraft/pull/1315
 
 **PR Description:** One-rule CSS fix (`padding: 0` on `.new-field > TextArea` in `kraft.tcss`) plus one assertion (`ta.content_offset.x == 0`) added to `test_the_form_fits_80x24`. Includes before/after repro output, both CONTRIBUTING.md-required checks (tests + lint) passing, and an AI assistance disclosure. `Fixes #1309`.
 
@@ -269,25 +268,21 @@ Created branch `fix/1309-textarea-padding` from main. Added `.new-field > TextAr
 
 **Technical Skills Gained**
 
-[What you learned technically, named concretely.]
+Textual's compact widget behavior: `compact=True` removes the border but not the padding, and the two widget types handle this differently — `Input`'s compact CSS variant explicitly sets `padding: 0` while `TextArea`'s does not. The fix is a one-rule CSS override in the calling stylesheet context, not in the widget instantiation. I also learned Textual's headless pilot API (`run_test`, `content_offset`) well enough to write an alignment assertion that catches the specific column offset without depending on pixel layout.
 
 **Challenges Overcome**
 
-[What was hard and how you solved it; point at the real events, the
-Toolkit blocks above are full of them.]
+The first lint run failed E501 because the test return line exceeded 100 characters. I'd inlined `form.query_one(TextArea).content_offset.x` directly into the tuple, which was too long. Extracting it to a local `ta` variable fixed the line length and also made the assertion clearer. The other friction point was the voice guard's session isolation: it calls Claude internally, so the final `gh pr create` command had to be issued from a fresh Claude Code session rather than from within the same session where I'd been building the fix.
 
 **What I'd Do Differently Next Time**
 
-[Reflection on your process.]
+Write the failing test assertion on main first, before touching the stylesheet, to confirm the baseline behavior is captured exactly. That sequence also clarifies what the test is checking before the fix touches it, which makes the diff easier to review. I'd also read the project's lint configuration before writing the test to avoid the line-length failure.
 
 ---
 
 ## Resources Used
 
-[What actually helped, not a reading list. List things this story
-already shows you using: the doc you followed to set the environment
-up, the thread that explained the bug, the person who answered you.
-One real entry beats ten plausible ones.]
-
-- [Link to documentation that helped]
-- [Discussion, issue, or post that helped]
+- kraft CONTRIBUTING.md — named the two required checks (`just test <path> -n auto` and `just lint`) and confirmed that a focused single-issue PR is the expected contribution shape
+- Textual source for `TextArea.DEFAULT_CSS` and `Input.-textual-compact` CSS — confirmed why the compact kwarg clears padding for `Input` but not `TextArea`, which grounded the diagnosis in the widget implementation rather than guessing
+- kraft issue #1309 thread — the issue body named the exact file, rule, and fix; the thread confirmed no one else had a PR open
+- PR monitor `skill/INSTALL.md` section 4 — used to diagnose why `--state` returned NO PR YET (gh was targeting the fork instead of the upstream) and how to run `gh repo set-default` to fix it
