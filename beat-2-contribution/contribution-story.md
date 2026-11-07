@@ -251,9 +251,9 @@ Created branch `fix/1309-textarea-padding` from main. Added `.new-field > TextAr
 
 **Maintainer Feedback:**
 
-- 2026-11-07: none yet
+- 2026-11-07: merged by itsOmidKarami with no review comments
 
-**Status:** Awaiting review
+**Status:** Merged
 
 **Toolkit**
 
