@@ -62,10 +62,9 @@ Installed the issue-scout skill over the unit-1 sandbox, wrote a fit profile tar
 
 The voice guard (`check_voice.py` as a PreToolUse hook) now intercepts every `gh issue comment` / `gh pr create` call before it posts. The rubric patch replaced the strict "Bounded scope" check with the more permissive "scope-feasible" row — the old check rejected most real-world issues with any open edge; the new one only rejects issues with no single identifiable piece of work. Re-grading with the patched rubric revealed that two of my three previous accepts (mcp-memory-service #1893 and discord-youtube-tracker #4) had open PRs fixing them since last week's scan; only kraft #1309 remained. The repo memory file (CLAUDE.local.md) distills the CONTRIBUTING.md rules, the subsystem my issue touches, and the exact test command into the clone root so Claude doesn't re-orient each session.
 
-**Unit 7: [one line on the tool work]**
+**Unit 7: Installed the ship-gate hook, wrote the kraft gate manifest, and passed it on the fix branch on the first run**
 
-[2-4 sentences: the ship-gate and your gate manifest. What it produced
-on your real branch, what fought you, what changed because of it.]
+The ship-gate runs before `gh pr create`, executes the manifest's checks (targeted tests + lint), and then runs pr-precheck on the branch, plan, evidence, and PR description. The manifest took one pass to write correctly — `just test tests/console/test_new_item.py -n auto` and `just lint` are the two checks CONTRIBUTING.md names for this issue's scope. The gate ran on `fix/1309-textarea-padding` and passed all four pr-precheck dimensions (plan-fidelity, test-evidence, diff-quality, standards-comms) on the first attempt; no rubric fixes were needed. The only friction was that the voice guard runs claude internally, so the final `gh pr create` has to go through a new Claude Code session rather than from within an existing one.
 
 **Unit 8: [one line on the tool work]**
 
@@ -93,26 +92,29 @@ This issue ranked first among the accepted candidates. The fix is a single CSS p
 
 **Problem Description**
 
-[In your own words, what is broken or missing?]
+In `kraft console`'s new-item form, the Description box sits one column to the right of every other input field. The left edge of text typed in Description is visually misaligned compared to Title, Repo, Chain, Spec, Plan, and After — which all start at the same column.
 
 **Expected Behavior**
 
-[What should happen?]
+The Description box's left content edge should start at column 0, matching the left margin of the Title and all other fields in the form.
 
 **Current Behavior**
 
-[What actually happens?]
+The Description `TextArea`'s content starts at column 1 (repro pilot: `TextArea offset.x=1` vs `Input offset.x=0`). One empty column of padding sits to the left of any text in the Description box.
 
 **Affected Components**
 
-[Which parts of the codebase are involved?]
+The bug has two involved files and a one-sided cause:
+
+- `src/kraft/console/screens/new_item.py` line 75 — `TextArea(compact=True, placeholder=HINTS["description"], id="new-description")`. The widget is instantiated correctly; `compact=True` is the right kwarg. The bug is not here.
+- `src/kraft/console/kraft.tcss` line 508 — `.new-field > Input, .new-field > TextArea { width: 1fr; }`. This rule sets width for both widgets but provides no `padding` override for `TextArea`. Textual's `TextArea.DEFAULT_CSS` sets `padding: 0 1`; the compact variant only removes the border, leaving that padding intact. `Input`'s compact variant explicitly sets `padding: 0`, clearing padding. Because the kraft stylesheet never overrides TextArea's padding in the `.new-field` context, the default one-column left pad survives.
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: Claude Code — read `new_item.py`, `kraft.tcss`, and the Textual widget source; cross-referenced against the repro pilot output from repro-check
+- What it produced: confirmed the one-file fix location (`kraft.tcss` line 508) and ruled out any change needed in `new_item.py`; the repro pilot's `offset.x` values were the decisive artifact
+- Difficulties: none — the issue body named the exact file and rule; reading the code confirmed it
+- What changed: nothing in the rubric or repro process; the pilot approach produced the needed artifact on first run
 
 ---
 
@@ -184,93 +186,82 @@ asyncio.run(main())
 
 **Analysis**
 
-[Your analysis of the root cause: what is causing the issue, traced
-to the files and functions involved.]
+The root cause is entirely in the stylesheet. Textual gives `TextArea` a `DEFAULT_CSS` of `padding: 0 1`. Its compact CSS variant (`TextArea.-textual-compact`) only removes the border via `border: none`; it never clears the padding. `Input`'s compact variant explicitly sets `padding: 0`, so compact `Input` widgets have zero padding. The kraft stylesheet at `kraft.tcss` line 508 sets `width: 1fr` for both `.new-field > Input` and `.new-field > TextArea`, but the rule contains no `padding` property, so TextArea's default `padding: 0 1` is left intact. The Python code in `new_item.py` is correct; nothing there needs changing.
 
 **Proposed Solution**
 
-[High-level description of your fix approach, and what you are
-deliberately NOT changing.]
+Add a `padding: 0` override for `.new-field > TextArea` in `kraft.tcss`. The existing combined rule can remain for width; a separate `.new-field > TextArea { padding: 0; }` rule added after it is the minimal targeted change. This matches the fix the issue body names exactly and touches nothing else.
+
+Explicitly not changing: `new_item.py` (widget instantiation is correct), any other form field widget or selector, any behavior besides the left-edge alignment of the Description box.
 
 **Implementation Plan**
 
-1. [Modify file X to do Y]
-2. [Add or change Z]
-3. [Update tests]
+1. `src/kraft/console/kraft.tcss` — after the existing `.new-field > Input, .new-field > TextArea { width: 1fr; }` block at line 508, add `.new-field > TextArea { padding: 0; }` to override the default padding for the Description widget.
+2. `tests/console/test_new_item.py` — add an assertion to the existing `test_the_form_fits_80x24` test that `form.query_one(TextArea).content_offset.x == 0`, confirming the Description left edge aligns with the other fields (the test already queries the form with a headless pilot and checks layout properties).
 
-[Record deviations here as they happen: what changed mid-build and
-why. A recorded deviation is honest work; silent drift is not.]
+[Record deviations here as they happen: what changed mid-build and why. A recorded deviation is honest work; silent drift is not.]
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: Claude Code — read `kraft.tcss` and `test_new_item.py` to scope the change; cross-referenced with the issue body's named fix and the CLAUDE.local.md repo memory file
+- What it produced: a two-step implementation plan (one-line stylesheet addition + one assertion in an existing test) with zero scope creep
+- Difficulties: none — the issue body identified the fix precisely; the plan simply commits to that path and pins the test location
+- What changed: nothing yet; this section will be updated as build deviations occur
 
 ---
 
 ## Testing Strategy
 
-[What observable checks prove the fix: your reproduction steps re-run
-against the built change (before and after), and the repo's own test
-suite or checks with the outcome shown. "Tests pass" with nothing
-observable named is not a strategy.]
+**Before (on main):** headless Textual pilot shows `TextArea offset.x=1  padding=Spacing(top=0, right=1, bottom=0, left=1)` vs `Input offset.x=0  padding=Spacing(top=0, right=0, bottom=0, left=0)`. The one-column offset is the specific failure.
+
+**After (on fix/1309-textarea-padding):** the `test_the_form_fits_80x24` test asserts the tuple `([True, True], "new-title", 3, [1, 3, 1, 1, 1, 1, 1], 0)` where the final `0` is `ta.content_offset.x` — the Description box left edge is now at column 0, aligned with every other field. All 22 tests in `tests/console/test_new_item.py` pass.
+
+**Targeted tests:** `just test tests/console/test_new_item.py -n auto` → 22 passed.
+
+**Lint:** `just lint` → All checks passed, 1250 files already formatted.
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: Claude Code — ran `just test` and `just lint` on the fix branch; observed pilot output on main for the before artifact
+- What it produced: 22 passed (including new alignment assertion); lint clean; before/after artifacts saved in `test_evidence.md`
+- Difficulties: first lint run failed E501 (line too long in the test); refactored to `ta = form.query_one(TextArea)` to stay under 100 characters
+- What changed: test refactored from inline `form.query_one(TextArea).content_offset.x` to `ta = form.query_one(TextArea); ... ta.content_offset.x` to satisfy ruff's line-length check
 
 ---
 
 ## Implementation Notes
 
-[A running log, added to as you work. Date each entry. What you
-built, decisions you made when you made them, wrong turns included.]
+**2026-11-07**
 
-**[Date]**
-
-[Entry]
-
-**[Date]**
-
-[Entry]
+Created branch `fix/1309-textarea-padding` from main. Added `.new-field > TextArea { padding: 0; }` in `kraft.tcss` after the existing combined width rule (line 508). Added `ta.content_offset.x` to the return tuple and assertion in `test_the_form_fits_80x24`. First lint run failed E501 on the return line — refactored to assign `ta = form.query_one(TextArea)` before the return to shorten the line. All 22 tests pass and lint is clean. Ship-gate passed on the first run: all four pr-precheck checks (plan-fidelity, test-evidence, diff-quality, standards-comms) green.
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: Claude Code — created branch, made edits, ran tests and lint, committed; ship-gate ran pr-precheck automatically
+- What it produced: one commit with two changed files; ship-gate PASS on first attempt
+- Difficulties: E501 lint failure on the test return line; fixed by extracting `ta` variable
+- What changed: test return line refactored to use a local `ta` variable instead of two separate `form.query_one(TextArea)` calls
 
 ---
 
 ## Pull Request
 
-**PR Link:** [GitHub PR URL when opened]
+**PR Link:** [to be added once opened]
 
-**PR Description:** [what the PR says; much of the content above
-adapts into it]
+**PR Description:** One-rule CSS fix (`padding: 0` on `.new-field > TextArea` in `kraft.tcss`) plus one assertion (`ta.content_offset.x == 0`) added to `test_the_form_fits_80x24`. Includes before/after repro output, both CONTRIBUTING.md-required checks (tests + lint) passing, and an AI assistance disclosure. `Fixes #1309`.
 
 **Maintainer Feedback:**
 
-- [Date]: [feedback received, or "none yet"; silence is a normal
-  state and costs you nothing]
-- [Date]: [how you addressed it]
+- 2026-11-07: none yet
 
-**Status:** [Awaiting review / Iterating / Merged / Closed. The
-status is a fact you record, never a grade: the PR is graded as
-opened.]
+**Status:** Awaiting review
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: ship-gate (run via `python3 ~/.claude/ship-gate/check_gate.py --branch --title "..." --body-file pr_draft.md`); Claude Code session for the final `gh pr create`
+- What it produced: ship-gate PASS on the first run; all four pr-precheck checks green; PR opened on itsOmidKarami/kraft pointing at the upstream (not the fork)
+- Difficulties: voice guard cannot invoke Claude from within an existing Claude session — the final `gh pr create` requires a fresh Claude Code invocation
+- What changed: nothing in the plan or description; ship-gate passed without changes
 
 ---
 
